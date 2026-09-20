@@ -1,6 +1,6 @@
 """
 LLM prompt templates for LegalLens.
-Each prompt is designed for structured JSON output via Claude tool calling.
+Each prompt is designed for structured JSON output via Groq tool calling.
 """
 
 from __future__ import annotations

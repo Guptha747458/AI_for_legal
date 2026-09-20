@@ -15,7 +15,7 @@ dependencies = [
     "pdfplumber==0.10.3",
     "PyPDF2==3.0.1",
     "chromadb==0.4.22",
-    "anthropic==0.18.0",
+    "groq==0.13.0",
     "pydantic==2.5.3",
     "pydantic-settings==2.1.0",
     "python-dotenv==1.0.0",

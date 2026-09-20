@@ -37,7 +37,7 @@ def explain_term_offline(term: str, context: str = "") -> dict[str, object]:
         "term": term.strip(),
         "definition": (
             "No offline definition available for this term in demo mode. "
-            "Connect an Anthropic API key for AI-powered definitions, or ask a licensed attorney."
+            "Connect a Groq API key for AI-powered definitions, or ask a licensed attorney."
         ),
         "demo": True,
     }

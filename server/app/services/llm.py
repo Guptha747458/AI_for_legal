@@ -1,7 +1,4 @@
-"""
-LLM service using Anthropic Claude Messages API.
-Implements tool calling for structured JSON outputs.
-"""
+"""LLM service using Groq's OpenAI-compatible chat completions API."""
 
 from __future__ import annotations
 
@@ -15,7 +12,7 @@ from app.core.settings import settings
 
 class LLMService:
     """
-    Service for interacting with Anthropic Claude API.
+    Service for interacting with Groq chat completions.
     Uses tool calling to force structured JSON outputs.
     """
 
@@ -28,9 +25,9 @@ class LLMService:
 
     def _get_client(self):  # type: ignore[no-untyped-def]
         if self._client is None and settings.is_available():
-            from anthropic import Anthropic
+            from groq import Groq
 
-            self._client = Anthropic(api_key=settings.api_key)
+            self._client = Groq(api_key=settings.api_key)
         return self._client
 
     def is_available(self) -> bool:
@@ -40,54 +37,74 @@ class LLMService:
     def use_demo(self) -> bool:
         return not settings.is_available()
 
-    def _call_anthropic_sync(
+    @staticmethod
+    def _to_groq_tools(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool["name"],
+                    "description": tool.get("description", ""),
+                    "parameters": tool["input_schema"],
+                },
+            }
+            for tool in tools
+        ]
+
+    def _call_groq_sync(
         self,
         system: str,
         user: str,
         tools: list[dict[str, Any]],
         tool_name: str,
     ) -> dict[str, Any]:
-        """Blocking Claude tool-calling request (runs in a worker thread)."""
-        from anthropic import Anthropic
+        """Blocking Groq tool-calling request (runs in a worker thread)."""
+        from groq import Groq
 
         client = self._get_client()
         if client is None:
-            raise RuntimeError("Anthropic API key is not configured")
-        assert isinstance(client, Anthropic)
+            raise RuntimeError("Groq API key is not configured")
+        assert isinstance(client, Groq)
 
-        message = client.messages.create(
+        response = client.chat.completions.create(
             model=self.model,
             max_tokens=self.max_tokens,
             temperature=self.temperature,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-            tools=tools,  # type: ignore[arg-type]
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            tools=self._to_groq_tools(tools),
+            tool_choice={"type": "function", "function": {"name": tool_name}},
         )
+        message = response.choices[0].message
 
-        for block in message.content:
-            if getattr(block, "type", None) == "tool_use" and getattr(block, "name", "") == tool_name:
-                data = getattr(block, "input", None)
+        for tool_call in message.tool_calls or []:
+            function = tool_call.function
+            if function.name == tool_name:
+                try:
+                    data = json.loads(function.arguments)
+                except json.JSONDecodeError:
+                    data = None
                 if isinstance(data, dict):
                     return data
 
-        text = "\n".join(
-            getattr(block, "text", "") for block in message.content if hasattr(block, "text")
-        )
+        text = message.content or ""
         try:
             parsed = json.loads(text)
             return parsed if isinstance(parsed, dict) else {"raw_text": text}
         except json.JSONDecodeError:
             return {"raw_text": text}
 
-    async def _call_anthropic(
+    async def _call_groq(
         self,
         system: str,
         user: str,
         tools: list[dict[str, Any]],
         tool_name: str,
     ) -> dict[str, Any]:
-        """Call Anthropic API in a worker thread to avoid blocking the event loop."""
-        return await asyncio.to_thread(self._call_anthropic_sync, system, user, tools, tool_name)
+        """Call Groq in a worker thread to avoid blocking the event loop."""
+        return await asyncio.to_thread(self._call_groq_sync, system, user, tools, tool_name)
 
     async def generate_simplification(
         self,
@@ -137,7 +154,7 @@ class LLMService:
             "Return JSON with keys: section_id, simplified_text, key_terms (list of terms that need definition)."
         )
 
-        return await self._call_anthropic(system, user, [tool], "simplify_section")
+        return await self._call_groq(system, user, [tool], "simplify_section")
 
     async def generate_classification(
         self,
@@ -217,7 +234,7 @@ class LLMService:
             "Return JSON with keys: clause_id, category, attention_level, rationale, plain_explanation."
         )
 
-        return await self._call_anthropic(system, user, [tool], "classify_clause")
+        return await self._call_groq(system, user, [tool], "classify_clause")
 
     async def generate_comparison(
         self,
@@ -282,7 +299,7 @@ class LLMService:
             "Return JSON with keys: changes (list of {type, clause_id_old, clause_id_new, explanation, impact})."
         )
 
-        return await self._call_anthropic(system, user, [tool], "compare_documents")
+        return await self._call_groq(system, user, [tool], "compare_documents")
 
     async def generate_qa(
         self,
@@ -339,7 +356,7 @@ class LLMService:
             "Return JSON with keys: answer, citations (list of clause_ids), disclaimer_needed (bool)."
         )
 
-        return await self._call_anthropic(system, user, [tool], "answer_question")
+        return await self._call_groq(system, user, [tool], "answer_question")
 
     async def generate_checklist(
         self,
@@ -408,7 +425,7 @@ class LLMService:
             "questions_for_lawyer (list of {question, related_clause_id})."
         )
 
-        return await self._call_anthropic(system, user, [tool], "generate_checklist")
+        return await self._call_groq(system, user, [tool], "generate_checklist")
 
 
     # ------------------------------------------------------------------
@@ -435,7 +452,7 @@ class LLMService:
             "simplified_text": (
                 f"In plain language: {first}. "
                 "This is a demo simplification (no API key configured) — "
-                "connect an Anthropic key for full AI summaries."
+                "connect a Groq key for full AI summaries."
             ),
             "key_terms": self._demo_terms(text),
             "demo": True,
@@ -536,7 +553,7 @@ class LLMService:
         return {
             "answer": (
                 f"Based on the document text: “{snippet}”. "
-                "(Demo answer — connect an Anthropic key for full AI Q&A. "
+                "(Demo answer — connect a Groq key for full AI Q&A. "
                 "This is general information, not legal advice.)"
             ),
             "citations": [],

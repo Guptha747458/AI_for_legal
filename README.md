@@ -9,13 +9,13 @@ Informational aid for understanding contracts, leases, policies, and notices.
 |---|---|
 | Frontend | React 18 + TypeScript + Vite + Tailwind CSS |
 | Backend | Python 3.11+ + FastAPI + Uvicorn |
-| LLM | Anthropic Claude Messages API with tool calling (structured JSON) |
+| LLM | Groq chat completions API with tool calling (structured JSON) |
 | Parsing | `python-docx`, `pdfplumber`, `PyPDF2` (PDF / DOCX / TXT) |
 | Grounding | In-memory hash-embedding vector store (session-scoped, no persistence) |
 
 No API key? The backend runs in **demo mode** with deterministic rule-based
-analysis so every feature is testable offline. Set `ANTHROPIC_API_KEY` for live
-Claude output.
+analysis so every feature is testable offline. Set `GROQ_API_KEY` for live
+Groq output.
 
 ## Folder structure (AI_for_legal is the project root)
 
@@ -47,7 +47,7 @@ AI_for_legal/
 ```powershell
 # backend (http://localhost:8000)
 cd server
-copy .env.example .env   # optional; without ANTHROPIC_API_KEY you get demo mode
+copy .env.example .env   # optional; without GROQ_API_KEY you get demo mode
 python -m uvicorn app.main:app --reload
 
 # frontend (http://localhost:5173, proxies /api → :8000)

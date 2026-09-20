@@ -20,10 +20,10 @@ class Settings:
     """Application settings loaded from environment variables."""
 
     def __init__(self) -> None:
-        self.api_key: str | None = os.getenv("ANTHROPIC_API_KEY")
-        self.model: str = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")
-        self.max_tokens: int = int(os.getenv("ANTHROPIC_MAX_TOKENS", "4096"))
-        self.temperature: float = float(os.getenv("ANTHROPIC_TEMPERATURE", "0.2"))
+        self.api_key: str | None = os.getenv("GROQ_API_KEY")
+        self.model: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        self.max_tokens: int = int(os.getenv("GROQ_MAX_TOKENS", "4096"))
+        self.temperature: float = float(os.getenv("GROQ_TEMPERATURE", "0.2"))
         self.max_document_chars: int = int(os.getenv("MAX_DOCUMENT_CHARS", "60000"))
         self.max_context_chars: int = int(os.getenv("MAX_CONTEXT_CHARS", "35000"))
         self.max_chunks: int = int(os.getenv("MAX_CHUNKS", "40"))
@@ -39,7 +39,7 @@ class Settings:
         self.cors_origins: list[str] = [o.strip() for o in origins.split(",") if o.strip()]
 
     def is_available(self) -> bool:
-        """True when a real Anthropic key is configured (live LLM mode)."""
+        """True when a real Groq key is configured (live LLM mode)."""
         return self.api_key is not None and len(self.api_key.strip()) > 0
 
     @property
