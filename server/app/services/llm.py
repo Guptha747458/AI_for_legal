@@ -59,24 +59,27 @@ class LLMService:
         tool_name: str,
     ) -> dict[str, Any]:
         """Blocking Groq tool-calling request (runs in a worker thread)."""
-        from groq import Groq
+        from groq import APIError, Groq
 
         client = self._get_client()
         if client is None:
             raise RuntimeError("Groq API key is not configured")
         assert isinstance(client, Groq)
 
-        response = client.chat.completions.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            temperature=self.temperature,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            tools=self._to_groq_tools(tools),
-            tool_choice={"type": "function", "function": {"name": tool_name}},
-        )
+        try:
+            response = client.chat.completions.create(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                tools=self._to_groq_tools(tools),
+                tool_choice={"type": "function", "function": {"name": tool_name}},
+            )
+        except APIError as exc:
+            raise RuntimeError(f"Groq request failed for model '{self.model}': {exc}") from exc
         message = response.choices[0].message
 
         for tool_call in message.tool_calls or []:
