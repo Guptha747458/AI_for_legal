@@ -2,7 +2,6 @@
 Core document processing services for LegalLens.
 """
 
-import os
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -187,12 +186,14 @@ class DocumentProcessor:
 
         file_path = upload_dir / f"{file_id}.{file_type}"
 
-        with open(file_path, "wb") as f:
-            f.seek(0)
-            content = await file.read()
-            f.write(content)
+        try:
+            with open(file_path, "wb") as f:
+                content = await file.read()
+                f.write(content)
 
-        chunks = extractor.extract_text(file_path)
+            chunks = extractor.extract_text(file_path)
+        finally:
+            file_path.unlink(missing_ok=True)
 
         processed_chunks = []
         for i, chunk in enumerate(chunks):

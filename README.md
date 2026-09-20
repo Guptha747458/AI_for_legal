@@ -59,12 +59,12 @@ npm run dev
 ## Test (sample contract, feature by feature)
 
 ```powershell
-cd server
-python -m pytest tests/test_pipeline.py -q   # upload → chunk → simplify →
-                                             # classify → Q&A → checklist →
-                                             # compare → delete
-cd ../client
+# From the project root: runs the full backend regression suite.
+npm test
+
+cd client
 npm run typecheck
+npm run lint
 npm run build
 ```
 
@@ -72,6 +72,9 @@ npm run build
 `samples/sample-contract.txt` and `samples/sample-contract-v2.txt`:
 1. Simplifier, 2. Clause/risk highlighter, 3. Comparison, 4. Grounded Q&A,
 5. Checklist + lawyer questions, 6. Glossary.
+
+`server/tests/test_validation.py` covers upload signature validation, bounded
+request input, and correct not-found behavior for document deletion.
 
 ## Safety
 

@@ -31,13 +31,22 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
     e.preventDefault();
     setIsDragOver(false);
     if (e.dataTransfer.files.length > 0) {
-      setFile(e.dataTransfer.files[0]);
+      const droppedFile = e.dataTransfer.files[0];
+      if (droppedFile.size > 20 * 1024 * 1024) {
+        setError('File is too large. Maximum size is 20MB.');
+        return;
+      }
+      setFile(droppedFile);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
+      if (files[0].size > 20 * 1024 * 1024) {
+        setError('File is too large. Maximum size is 20MB.');
+        return;
+      }
       setFile(files[0]);
       setError(null);
     }
@@ -99,13 +108,20 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click();
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="Choose a document to upload"
         >
           <input
             ref={fileInputRef}
+            id="document-file"
             type="file"
             accept=".pdf,.docx,.txt"
             onChange={handleFileChange}
-            className="hidden"
+            className="sr-only"
           />
           <div className="flex flex-col items-center gap-3">
             <svg
@@ -137,8 +153,9 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
 
         {/* Document Type */}
         <div>
-          <label className="label">Document Type</label>
+          <label className="label" htmlFor="document-type">Document Type</label>
           <select
+            id="document-type"
             value={documentType}
             onChange={(e) => setDocumentType(e.target.value as DocumentType)}
             className="input"
@@ -155,11 +172,12 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
 
         {/* Jurisdiction (Optional) */}
         <div>
-          <label className="label">
+          <label className="label" htmlFor="jurisdiction">
             Jurisdiction <span className="text-slate-400">(optional)</span>
           </label>
           <input
             type="text"
+            id="jurisdiction"
             placeholder="e.g., California, USA or England and Wales"
             value={jurisdiction}
             onChange={(e) => setJurisdiction(e.target.value)}
@@ -172,7 +190,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
 
         {/* Error */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+          <div role="alert" className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
             {error}
           </div>
         )}

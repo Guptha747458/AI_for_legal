@@ -42,12 +42,13 @@ export default function App() {
                 Informational Aid Only
               </span>
             </div>
-            <nav className="flex items-center gap-1">
+            <nav className="flex items-center gap-1" aria-label="Primary navigation">
               {['upload', 'viewer', 'compare', 'chat', 'checklist', 'glossary'].map(
                 (page) => (
                   <button
                     key={page}
                     onClick={() => handleNavigate(page as Page)}
+                    aria-current={currentPage === page ? 'page' : undefined}
                     className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       currentPage === page
                         ? 'bg-blue-50 text-blue-700'

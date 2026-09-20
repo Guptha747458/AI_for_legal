@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.core.settings import settings
 from app.core.processor import processor
@@ -50,22 +50,35 @@ app.add_middleware(
 
 class QARequest(BaseModel):
     document_id: str
-    question: str
-    jurisdiction: str = "not specified"
+    question: str = Field(min_length=1, max_length=2000)
+    jurisdiction: str = Field(default="not specified", max_length=200)
 
 
 class ChecklistRequest(BaseModel):
     document_id: str
-    jurisdiction: str = "not specified"
+    jurisdiction: str = Field(default="not specified", max_length=200)
 
 
 class GlossaryRequest(BaseModel):
-    term: str
-    context: str = ""
-    jurisdiction: str = "not specified"
+    term: str = Field(min_length=1, max_length=200)
+    context: str = Field(default="", max_length=2000)
+    jurisdiction: str = Field(default="not specified", max_length=200)
 
 
 chunker = DocumentChunker()
+
+
+def _validate_file_signature(file_type: str, content: bytes) -> None:
+    """Reject files whose bytes do not match the declared supported format."""
+    if file_type == "pdf" and not content.startswith(b"%PDF-"):
+        raise HTTPException(status_code=400, detail="The uploaded file is not a valid PDF.")
+    if file_type == "docx" and not content.startswith(b"PK"):
+        raise HTTPException(status_code=400, detail="The uploaded file is not a valid DOCX.")
+    if file_type == "txt":
+        try:
+            content.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise HTTPException(status_code=400, detail="The uploaded text file is not valid UTF-8.") from exc
 
 
 @app.get("/")
@@ -111,6 +124,7 @@ async def upload_document(
         raise HTTPException(status_code=413, detail="File too large (max 20MB).")
     if len(content) == 0:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+    _validate_file_signature(file_type, content)
 
     # Re-wrap bytes so processor can stream them back out.
     class _BytesUpload:
@@ -186,7 +200,7 @@ async def upload_document(
     }
 
 
-def _require_clause(document_id: str, clause_id: str) -> dict[str, Any]:
+def _require_clause(document_id: str, clause_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
     doc = documents.get(document_id)
     if doc is None:
         raise HTTPException(status_code=404, detail="Document not found. Re-upload it (sessions are in-memory).")
@@ -359,6 +373,8 @@ async def clear_job(job_id: str) -> dict[str, str]:
 @app.delete("/api/v1/documents/{document_id}")
 async def delete_document(document_id: str) -> dict[str, str]:
     """Privacy: let users delete their session data."""
+    if documents.get(document_id) is None:
+        raise HTTPException(status_code=404, detail="Document not found.")
     documents.clear(document_id)
     vector_store.clear_collection(f"doc_{document_id}")
     return {"status": "deleted"}
