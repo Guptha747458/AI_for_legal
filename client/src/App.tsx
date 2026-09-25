@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { Scale } from 'lucide-react';
 import { DisclaimerBanner } from './components/DisclaimerBanner';
 import { Footer } from './components/Footer';
 import { DocumentUpload } from './components/DocumentUpload';
@@ -34,9 +35,10 @@ export default function App() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => handleNavigate('upload')}
-                className="text-xl font-bold text-blue-700 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                className="inline-flex items-center gap-2 text-xl font-bold text-blue-700 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
               >
-                ⚖️ LegalLens
+                <Scale className="h-5 w-5" aria-hidden="true" />
+                LegalLens
               </button>
               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
                 Informational Aid Only

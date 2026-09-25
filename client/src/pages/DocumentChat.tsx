@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { apiService } from '../services/api';
 import { DISCLAIMER_TEXT, type QAResponse } from '../types';
 
@@ -47,7 +48,10 @@ export function DocumentChat({ documentId, onBack }: DocumentChatProps) {
   return (
     <div className="max-w-3xl mx-auto flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="text-slate-600 hover:text-slate-900 text-sm">← Back</button>
+        <button onClick={onBack} className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 text-sm">
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back
+        </button>
         <h1 className="text-xl font-bold text-slate-900">Document Q&amp;A</h1>
       </div>
       <p className="text-sm text-slate-600">

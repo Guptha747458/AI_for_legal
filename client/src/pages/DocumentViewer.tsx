@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, Info } from 'lucide-react';
 import { apiService } from '../services/api';
 import { useApp } from '../hooks/AppContext';
 import {
@@ -109,7 +110,10 @@ export function DocumentViewer({ documentId, onBack }: DocumentViewerProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <button onClick={onBack} className="text-sm text-slate-600 hover:text-slate-900">← Back</button>
+          <button onClick={onBack} className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Back
+          </button>
           <h1 className="text-xl font-bold text-slate-900 truncate max-w-[60vw]">
             {stored?.filename ?? 'Document'}
           </h1>
@@ -188,7 +192,7 @@ export function DocumentViewer({ documentId, onBack }: DocumentViewerProps) {
                                     lookupTerm(t);
                                   }}
                                 >
-                                  {t} ⓘ
+                                  {t} <Info className="ml-1 inline h-3.5 w-3.5" aria-hidden="true" />
                                 </button>
                               ))}
                             </div>

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { AlertTriangle, Check, LoaderCircle, Upload } from 'lucide-react';
 import { apiService } from '../services/api';
 import { useApp } from '../hooks/AppContext';
 import type { DocumentType } from '../types';
@@ -124,19 +125,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
             className="sr-only"
           />
           <div className="flex flex-col items-center gap-3">
-            <svg
-              className="w-12 h-12 text-slate-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-              />
-            </svg>
+            <Upload className="w-12 h-12 text-slate-400" aria-hidden="true" />
             <div>
               <p className="text-sm font-medium text-slate-700">
                 {file ? file.name : 'Drop your file here or click to browse'}
@@ -146,7 +135,10 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
               </p>
             </div>
             {file && (
-              <span className="badge bg-green-100 text-green-800">✓ Ready</span>
+              <span className="badge bg-green-100 text-green-800">
+                <Check className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                Ready
+              </span>
             )}
           </div>
         </div>
@@ -203,10 +195,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
         >
           {isUploading ? (
             <span className="flex items-center justify-center gap-2">
-              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
+              <LoaderCircle className="animate-spin h-5 w-5" aria-hidden="true" />
               Processing...
             </span>
           ) : (
@@ -218,9 +207,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
       {/* Disclaimer */}
       <div className="mt-8 card p-4">
         <div className="flex items-start gap-3">
-          <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 9h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
+          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
           <div className="text-sm text-slate-600">
             <p className="font-medium text-slate-900 mb-1">Before you proceed</p>
             <p>
