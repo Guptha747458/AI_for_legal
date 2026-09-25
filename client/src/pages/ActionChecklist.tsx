@@ -54,18 +54,18 @@ export function ActionChecklist({ documentId, onBack }: ActionChecklistProps) {
         </button>
         <h1 className="text-xl font-bold text-slate-900">Action Checklist</h1>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <input
           className="input"
           placeholder="Jurisdiction (optional)"
           value={jurisdiction}
           onChange={(e) => setJurisdiction(e.target.value)}
         />
-        <button className="btn-primary" onClick={generate} disabled={loading}>
+        <button className="btn-primary sm:shrink-0" onClick={generate} disabled={loading}>
           {loading ? 'Generating…' : 'Generate'}
         </button>
         {result && (
-          <button className="btn-outline" onClick={exportText}>
+          <button className="btn-outline sm:shrink-0" onClick={exportText}>
             Copy
           </button>
         )}

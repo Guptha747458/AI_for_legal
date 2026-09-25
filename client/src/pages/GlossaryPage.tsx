@@ -40,7 +40,7 @@ export function GlossaryPage({ onBack }: GlossaryPageProps) {
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button onClick={onBack} className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 text-sm">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Back
@@ -49,7 +49,7 @@ export function GlossaryPage({ onBack }: GlossaryPageProps) {
       </div>
       <p className="text-sm text-slate-600">Click a term or type your own for a plain-language definition.</p>
       <form
-        className="flex gap-2"
+        className="flex flex-col gap-2 sm:flex-row"
         onSubmit={(e) => {
           e.preventDefault();
           lookup(term);
@@ -61,7 +61,7 @@ export function GlossaryPage({ onBack }: GlossaryPageProps) {
           value={term}
           onChange={(e) => setTerm(e.target.value)}
         />
-        <button className="btn-primary" disabled={loading || !term.trim()}>
+        <button className="btn-primary sm:shrink-0" disabled={loading || !term.trim()}>
           Define
         </button>
       </form>

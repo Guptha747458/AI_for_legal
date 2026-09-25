@@ -89,16 +89,16 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-slate-900 mb-2">Upload Your Document</h1>
-      <p className="text-slate-600 mb-6">
+    <div className="mx-auto max-w-2xl">
+      <h1 className="mb-2 text-2xl font-bold text-slate-900 sm:text-3xl">Upload Your Document</h1>
+      <p className="mb-6 text-sm text-slate-600 sm:text-base">
         Upload a contract, lease, or other legal document to get started. We support PDF, DOCX, and plain text files.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6" onPaste={handlePaste}>
         {/* File Upload Zone */}
         <div
-          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+          className={`cursor-pointer rounded-xl border-2 border-dashed p-5 text-center transition-colors sm:p-8 ${
             isDragOver
               ? 'border-blue-500 bg-blue-50'
               : file
@@ -127,7 +127,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
           <div className="flex flex-col items-center gap-3">
             <Upload className="w-12 h-12 text-slate-400" aria-hidden="true" />
             <div>
-              <p className="text-sm font-medium text-slate-700">
+              <p className="break-words text-sm font-medium text-slate-700">
                 {file ? file.name : 'Drop your file here or click to browse'}
               </p>
               <p className="mt-1 text-xs text-slate-500">
@@ -205,7 +205,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
       </form>
 
       {/* Disclaimer */}
-      <div className="mt-8 card p-4">
+      <div className="card mt-8 p-4">
         <div className="flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
           <div className="text-sm text-slate-600">

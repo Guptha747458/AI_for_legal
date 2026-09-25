@@ -108,7 +108,7 @@ export function DocumentViewer({ documentId, onBack }: DocumentViewerProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <button onClick={onBack} className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -122,12 +122,12 @@ export function DocumentViewer({ documentId, onBack }: DocumentViewerProps) {
             {stored?.mode === 'demo' ? ' · demo analysis (no API key)' : ''}
           </p>
         </div>
-        <div className="flex gap-1 bg-white border rounded-lg p-1">
+        <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border bg-white p-1">
           {(['original', 'simplified', 'side-by-side'] as ViewMode[]).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
-              className={`px-3 py-1.5 text-sm rounded-md ${mode === m ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-100'}`}
+              className={`shrink-0 px-3 py-1.5 text-sm rounded-md ${mode === m ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-100'}`}
             >
               {m === 'side-by-side' ? 'Side-by-side' : m[0].toUpperCase() + m.slice(1)}
             </button>

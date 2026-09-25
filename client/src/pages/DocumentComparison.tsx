@@ -75,7 +75,7 @@ export function DocumentComparison({ docIds, onCompare, onBack }: DocumentCompar
 
   return (
     <div className="max-w-3xl mx-auto space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button onClick={onBack} className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 text-sm">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Back

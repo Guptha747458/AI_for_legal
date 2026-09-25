@@ -47,7 +47,7 @@ export function DocumentChat({ documentId, onBack }: DocumentChatProps) {
 
   return (
     <div className="max-w-3xl mx-auto flex flex-col gap-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button onClick={onBack} className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 text-sm">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Back
@@ -95,7 +95,7 @@ export function DocumentChat({ documentId, onBack }: DocumentChatProps) {
       </div>
       {error && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">{error}</div>}
       <form
-        className="flex gap-2"
+        className="flex flex-col gap-2 sm:flex-row"
         onSubmit={(e) => {
           e.preventDefault();
           send(input);
@@ -107,7 +107,7 @@ export function DocumentChat({ documentId, onBack }: DocumentChatProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />
-        <button className="btn-primary" disabled={loading || !input.trim()}>
+        <button className="btn-primary sm:shrink-0" disabled={loading || !input.trim()}>
           Ask
         </button>
       </form>
