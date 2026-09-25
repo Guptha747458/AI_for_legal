@@ -42,7 +42,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_credentials=True,
+    allow_credentials="*" not in settings.cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -135,7 +135,7 @@ async def upload_document(
         async def read(self) -> bytes:
             return self._data
 
-    result = await processor.process_file(_BytesUpload(content, file.filename))  # type: ignore[arg-type]
+    result = await processor.process_file(_BytesUpload(content, file.filename), content=content)  # type: ignore[arg-type]
     if result["total_chars"] > settings.max_document_chars:
         raise HTTPException(
             status_code=413,
@@ -161,7 +161,7 @@ async def upload_document(
         for c in clauses
     ]
 
-    documents.save(
+    evicted_id = documents.save(
         document_id=doc_id,
         filename=result["filename"],
         file_type=result["file_type"],
@@ -170,6 +170,8 @@ async def upload_document(
         chunks=result["chunks"],
         clauses=clause_dicts,
     )
+    if evicted_id is not None:
+        vector_store.clear_collection(f"doc_{evicted_id}")
 
     collection = f"doc_{doc_id}"
     vector_store.add_collection(collection)

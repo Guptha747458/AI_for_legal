@@ -13,6 +13,7 @@ from app.services.documents import documents
 from app.services.glossary import explain_term_offline
 from app.services.llm import llm_service
 from app.services.vector_store import vector_store
+from app.core import settings as settings_module
 
 SAMPLE = Path(__file__).resolve().parents[2] / "samples" / "sample-contract.txt"
 SAMPLE_V2 = Path(__file__).resolve().parents[2] / "samples" / "sample-contract-v2.txt"
@@ -45,6 +46,36 @@ def test_demo_qa_out_of_scope() -> None:
 
 def test_glossary_offline() -> None:
     assert "arbitrator" in explain_term_offline("arbitration")["definition"]
+
+
+def test_document_registry_evicts_oldest_document_and_vector_collection(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings_module.settings, "max_documents", 1)
+    client = TestClient(app)
+
+    first = client.post(
+        "/api/v1/upload",
+        files={"file": ("first.txt", b"First contract text", "text/plain")},
+    ).json()
+    vector_store.add_collection(f"doc_{first['document_id']}")
+
+    second = client.post(
+        "/api/v1/upload",
+        files={"file": ("second.txt", b"Second contract text", "text/plain")},
+    ).json()
+
+    assert documents.get(first["document_id"]) is None
+    assert vector_store.query(f"doc_{first['document_id']}") == []
+    assert documents.get(second["document_id"]) is not None
+
+
+def test_vector_store_returns_no_results_for_non_positive_limit() -> None:
+    vector_store.add_document("test-limit", "doc-limit", [{"text": "contract terms"}])
+
+    assert vector_store.query("test-limit", "contract", top_k=0) == []
+    assert vector_store.query("test-limit", "contract", top_k=-1) == []
+    vector_store.clear_collection("test-limit")
 
 
 def test_upload_then_qa_checklist_compare() -> None:

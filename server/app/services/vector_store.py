@@ -7,6 +7,7 @@ No external dependencies required beyond what's already installed.
 from __future__ import annotations
 
 import hashlib
+import heapq
 import uuid
 from typing import Any
 
@@ -110,8 +111,9 @@ class VectorStore:
                 }
             )
 
-        results.sort(key=lambda x: x["similarity"], reverse=True)
-        return results[:top_k]
+        if top_k <= 0:
+            return []
+        return heapq.nlargest(top_k, results, key=lambda x: x["similarity"])
 
     def clear_collection(self, collection_name: str) -> None:
         """Clear a collection (for session cleanup)."""

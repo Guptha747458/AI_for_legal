@@ -27,6 +27,7 @@ class Settings:
         self.max_document_chars: int = int(os.getenv("MAX_DOCUMENT_CHARS", "60000"))
         self.max_context_chars: int = int(os.getenv("MAX_CONTEXT_CHARS", "35000"))
         self.max_chunks: int = int(os.getenv("MAX_CHUNKS", "40"))
+        self.max_documents: int = int(os.getenv("MAX_DOCUMENTS", "100"))
         self.demo_mode: bool = os.getenv("LEGALLENS_DEMO_MODE", "true").lower() in ("1", "true", "yes")
         base = Path(os.getenv("LEGALLENS_DATA_DIR", "data"))
         # Resolve relative to the server/ directory so cwd doesn't matter.

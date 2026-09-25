@@ -170,7 +170,7 @@ class DocumentProcessor:
 
         return {"start_pos": 0, "end_pos": len(chunks[current_chunk_index]["text"]), "page_number": 1}
 
-    async def process_file(self, file: UploadFile) -> dict[str, Any]:
+    async def process_file(self, file: UploadFile, content: bytes | None = None) -> dict[str, Any]:
         """
         Process an uploaded file and extract text with metadata.
 
@@ -188,8 +188,7 @@ class DocumentProcessor:
 
         try:
             with open(file_path, "wb") as f:
-                content = await file.read()
-                f.write(content)
+                f.write(content if content is not None else await file.read())
 
             chunks = extractor.extract_text(file_path)
         finally:

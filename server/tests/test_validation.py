@@ -42,6 +42,17 @@ def test_qa_rejects_unbounded_question() -> None:
     assert response.status_code == 422
 
 
+def test_upload_rejects_file_over_size_limit() -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/upload",
+        files={"file": ("contract.txt", b"x" * (20 * 1024 * 1024 + 1), "text/plain")},
+    )
+
+    assert response.status_code == 413
+
+
 def test_delete_missing_document_returns_not_found() -> None:
     client = TestClient(app)
 

@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from typing import Any
+
+from app.core.settings import settings
 
 
 class DocumentRegistry:
     """Store parsed documents for the lifetime of the server process."""
 
     def __init__(self) -> None:
-        self._docs: dict[str, dict[str, Any]] = {}
+        self._docs: OrderedDict[str, dict[str, Any]] = OrderedDict()
 
     def save(
         self,
@@ -20,7 +23,8 @@ class DocumentRegistry:
         jurisdiction: str,
         chunks: list[dict[str, Any]],
         clauses: list[dict[str, Any]],
-    ) -> None:
+    ) -> str | None:
+        evicted_id: str | None = None
         self._docs[document_id] = {
             "document_id": document_id,
             "filename": filename,
@@ -33,6 +37,10 @@ class DocumentRegistry:
             "chunk_map": {c["chunk_id"]: c for c in chunks},
             "full_text": "\n\n".join(c["text"] for c in clauses) or "\n".join(c["text"] for c in chunks),
         }
+        self._docs.move_to_end(document_id)
+        while len(self._docs) > settings.max_documents:
+            evicted_id, _ = self._docs.popitem(last=False)
+        return evicted_id
 
     def get(self, document_id: str) -> dict[str, Any] | None:
         return self._docs.get(document_id)
