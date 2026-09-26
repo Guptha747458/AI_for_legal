@@ -62,3 +62,17 @@ class ComparisonJob:
 
 # A simple in-memory registry. In production, use a database.
 jobs: dict[str, AnalysisJob | ComparisonJob] = {}
+
+
+def prune_jobs(max_jobs: int = 1000) -> None:
+    """Keep the in-memory registry bounded while retaining recent jobs."""
+    while len(jobs) > max_jobs:
+        oldest_id = min(jobs, key=lambda job_id: jobs[job_id].created_at)
+        del jobs[oldest_id]
+
+
+def remove_jobs_for_document(document_id: str) -> None:
+    for job_id, job in list(jobs.items()):
+        document_ids = job.document_ids if isinstance(job, ComparisonJob) else [job.document_id]
+        if document_id in document_ids:
+            del jobs[job_id]

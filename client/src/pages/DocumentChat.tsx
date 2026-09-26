@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { apiService } from '../services/api';
+import { apiService, getApiErrorMessage } from '../services/api';
 import { DISCLAIMER_TEXT, type QAResponse } from '../types';
 
 interface DocumentChatProps {
@@ -39,7 +39,7 @@ export function DocumentChat({ documentId, onBack }: DocumentChatProps) {
       const res: QAResponse = await apiService.answerQuestion(documentId, q, jurisdiction || 'not specified');
       setMessages((m) => [...m, { role: 'assistant', text: res.answer, citations: res.citations }]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to answer question');
+      setError(getApiErrorMessage(e, 'Failed to answer question'));
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,9 @@ export function DocumentChat({ documentId, onBack }: DocumentChatProps) {
         Answers are grounded in your uploaded document and cite their sources. This is general
         information, not legal advice.
       </p>
+      <label className="sr-only" htmlFor="chat-jurisdiction">Jurisdiction</label>
       <input
+        id="chat-jurisdiction"
         className="input"
         placeholder="Jurisdiction (optional)"
         value={jurisdiction}
@@ -71,7 +73,7 @@ export function DocumentChat({ documentId, onBack }: DocumentChatProps) {
           </button>
         ))}
       </div>
-      <div className="card">
+      <div className="card" aria-live="polite" aria-busy={loading}>
         <div className="card-body space-y-4 max-h-[50vh] overflow-y-auto scrollbar-thin">
           {messages.length === 0 && (
             <p className="text-sm text-slate-500">Ask a question about the document to begin.</p>

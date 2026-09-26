@@ -11,12 +11,25 @@ from app.main import app
 from app.services.chunker import DocumentChunker
 from app.services.documents import documents
 from app.services.glossary import explain_term_offline
-from app.services.llm import llm_service
+from app.services.llm import LLMService, llm_service
 from app.services.vector_store import vector_store
 from app.core import settings as settings_module
 
 SAMPLE = Path(__file__).resolve().parents[2] / "samples" / "sample-contract.txt"
 SAMPLE_V2 = Path(__file__).resolve().parents[2] / "samples" / "sample-contract-v2.txt"
+
+
+def test_gpt_oss_allows_json_content_when_tool_call_is_declined() -> None:
+    service = LLMService()
+    service.model = "openai/gpt-oss-120b"
+
+    assert service._tool_choice("compare_documents") == "auto"
+
+    service.model = "llama-3.3-70b-versatile"
+    assert service._tool_choice("compare_documents") == {
+        "type": "function",
+        "function": {"name": "compare_documents"},
+    }
 
 
 def test_chunker_splits_sample_contract() -> None:

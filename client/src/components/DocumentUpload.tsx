@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { AlertTriangle, Check, LoaderCircle, Upload } from 'lucide-react';
-import { apiService } from '../services/api';
+import { apiService, getApiErrorMessage } from '../services/api';
 import { useApp } from '../hooks/AppContext';
-import type { DocumentType } from '../types';
+import type { Document, DocumentType } from '../types';
 
 interface DocumentUploadProps {
   onUploadComplete: (docId: string) => void;
@@ -17,6 +17,19 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { dispatch } = useApp();
+  const validateFile = (candidate: File): boolean => {
+    const extension = candidate.name.toLowerCase().split('.').pop();
+    if (!extension || !['pdf', 'docx', 'txt'].includes(extension)) {
+      setError('Supported file types are PDF, DOCX, and TXT.');
+      return false;
+    }
+    if (candidate.size > 20 * 1024 * 1024) {
+      setError('File is too large. Maximum size is 20MB.');
+      return false;
+    }
+    setError(null);
+    return true;
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -33,23 +46,14 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
     setIsDragOver(false);
     if (e.dataTransfer.files.length > 0) {
       const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile.size > 20 * 1024 * 1024) {
-        setError('File is too large. Maximum size is 20MB.');
-        return;
-      }
-      setFile(droppedFile);
+      if (validateFile(droppedFile)) setFile(droppedFile);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      if (files[0].size > 20 * 1024 * 1024) {
-        setError('File is too large. Maximum size is 20MB.');
-        return;
-      }
-      setFile(files[0]);
-      setError(null);
+      if (validateFile(files[0])) setFile(files[0]);
     }
   };
 
@@ -58,8 +62,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
     if (text) {
       const blob = new Blob([text], { type: 'text/plain' });
       const fakeFile = new File([blob], 'pasted-text.txt', { type: 'text/plain' });
-      setFile(fakeFile);
-      setError(null);
+      if (validateFile(fakeFile)) setFile(fakeFile);
     }
   };
 
@@ -75,14 +78,22 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
     setIsUploading(true);
     try {
       const result = await apiService.uploadDocument(file, documentType, jurisdiction);
-      dispatch({ type: 'ADD_DOCUMENT', document: result as any });
+      const document: Document = {
+        ...result,
+        status: result.status,
+        clauses: result.clauses.map((clause) => ({
+          ...clause,
+          title: clause.title ?? undefined,
+          document_id: result.document_id,
+          char_count: clause.text.length,
+          start_pos: 0,
+          end_pos: clause.text.length,
+        })),
+      };
+      dispatch({ type: 'ADD_DOCUMENT', document });
       setTimeout(() => onUploadComplete(result.document_id), 500);
     } catch (err) {
-      const detail =
-        typeof err === 'object' && err !== null && 'response' in err
-          ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
-          : undefined;
-      setError(detail || (err instanceof Error ? err.message : 'Failed to upload document'));
+      setError(getApiErrorMessage(err, 'Failed to upload document'));
     } finally {
       setIsUploading(false);
     }
@@ -115,6 +126,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
           role="button"
           tabIndex={0}
           aria-label="Choose a document to upload"
+          aria-busy={isUploading}
         >
           <input
             ref={fileInputRef}

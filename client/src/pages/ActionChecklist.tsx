@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { apiService } from '../services/api';
+import { apiService, getApiErrorMessage } from '../services/api';
 import { DISCLAIMER_TEXT, type ChecklistResult } from '../types';
 
 interface ActionChecklistProps {
@@ -23,7 +23,7 @@ export function ActionChecklist({ documentId, onBack }: ActionChecklistProps) {
       setResult(res);
       setChecked({});
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to generate checklist');
+      setError(getApiErrorMessage(e, 'Failed to generate checklist'));
     } finally {
       setLoading(false);
     }
@@ -55,7 +55,9 @@ export function ActionChecklist({ documentId, onBack }: ActionChecklistProps) {
         <h1 className="text-xl font-bold text-slate-900">Action Checklist</h1>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
+        <label className="sr-only" htmlFor="checklist-jurisdiction">Jurisdiction</label>
         <input
+          id="checklist-jurisdiction"
           className="input"
           placeholder="Jurisdiction (optional)"
           value={jurisdiction}

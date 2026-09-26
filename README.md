@@ -14,8 +14,8 @@ Informational aid for understanding contracts, leases, policies, and notices.
 | Grounding | In-memory hash-embedding vector store (session-scoped, no persistence) |
 
 No API key? The backend runs in **demo mode** with deterministic rule-based
-analysis so every feature is testable offline. Set `GROQ_API_KEY` for live
-Groq output.
+analysis so every feature is testable offline. For live Groq output, set both
+`GROQ_API_KEY` and `LEGALLENS_DEMO_MODE=false`.
 
 ## Folder structure (AI_for_legal is the project root)
 
@@ -47,7 +47,7 @@ AI_for_legal/
 ```powershell
 # backend (http://localhost:8000)
 cd server
-copy .env.example .env   # optional; without GROQ_API_KEY you get demo mode
+# Configure GROQ_API_KEY and LEGALLENS_DEMO_MODE=false for live analysis.
 python -m uvicorn app.main:app --reload
 
 # frontend (http://localhost:5173, proxies /api → :8000)

@@ -7,11 +7,17 @@ import type {
   JobStatus,
   DocumentType,
 } from '../types';
+import type { AxiosError } from 'axios';
 
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL || ''}/api/v1`,
   timeout: 120000,
 });
+
+export function getApiErrorMessage(error: unknown, fallback = 'Request failed'): string {
+  const response = (error as AxiosError<{ detail?: string }> | undefined)?.response;
+  return response?.data?.detail || (error instanceof Error ? error.message : fallback);
+}
 
 export interface UploadResult {
   document_id: string;
@@ -81,7 +87,7 @@ export const apiService = {
     documentId: string,
     documentType: DocumentType,
   ): Promise<{ section_id: string; simplified_text: string; key_terms: string[] }> => {
-    const response = await api.post(
+    const response = await api.post<{ section_id: string; simplified_text: string; key_terms: string[] }>(
       `/analyze/simplify/${sectionId}`,
       null,
       {
@@ -150,9 +156,7 @@ export const apiService = {
     return response.data;
   },
 
-  getDocument: async (documentId: string) => {
-    const response = await api.get(`/documents/${documentId}`);
-    return response.data as {
+  getDocument: async (documentId: string): Promise<{
       document_id: string;
       filename: string;
       clauses: Array<{
@@ -162,16 +166,18 @@ export const apiService = {
         clause_index: number;
         title?: string | null;
       }>;
-    };
+    }> => {
+    const response = await api.get(`/documents/${documentId}`);
+    return response.data;
   },
 
-  explainTerm: async (term: string, context = '') => {
-    const response = await api.post('/analyze/glossary', { term, context });
-    return response.data as { term: string; definition: string; demo?: boolean };
+  explainTerm: async (term: string, context = ''): Promise<{ term: string; definition: string; demo?: boolean }> => {
+    const response = await api.post<{ term: string; definition: string; demo?: boolean }>('/analyze/glossary', { term, context });
+    return response.data;
   },
 
-  deleteDocument: async (documentId: string) => {
-    const response = await api.delete(`/documents/${documentId}`);
+  deleteDocument: async (documentId: string): Promise<{ status: string }> => {
+    const response = await api.delete<{ status: string }>(`/documents/${documentId}`);
     return response.data;
   },
 };

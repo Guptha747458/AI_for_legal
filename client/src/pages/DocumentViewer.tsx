@@ -135,7 +135,9 @@ export function DocumentViewer({ documentId, onBack }: DocumentViewerProps) {
         </div>
       </div>
 
-      <input
+          <label htmlFor="clause-filter" className="sr-only">Filter clauses or categories</label>
+          <input
+            id="clause-filter"
         className="input max-w-md"
         placeholder="Filter clauses or categories…"
         value={filter}
@@ -154,6 +156,14 @@ export function DocumentViewer({ documentId, onBack }: DocumentViewerProps) {
               <div
                 key={clause.clause_id}
                 onClick={() => setSelectedId(clause.clause_id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelectedId(clause.clause_id);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
                 className={`card cursor-pointer transition-shadow hover:shadow-md ${isSel ? 'ring-2 ring-blue-500' : ''} ${
                   cls?.attention_level === 'high'
                     ? 'border-l-4 border-l-red-400'
@@ -186,6 +196,7 @@ export function DocumentViewer({ documentId, onBack }: DocumentViewerProps) {
                               {simp.terms.map((t) => (
                                 <button
                                   key={t}
+                                  type="button"
                                   className="badge bg-white border border-blue-200 text-blue-700 hover:bg-blue-100"
                                   onClick={(e) => {
                                     e.stopPropagation();

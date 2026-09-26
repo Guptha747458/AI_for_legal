@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { apiService } from '../services/api';
+import { apiService, getApiErrorMessage } from '../services/api';
 
 interface GlossaryPageProps {
   onBack: () => void;
@@ -32,7 +32,7 @@ export function GlossaryPage({ onBack }: GlossaryPageProps) {
       const res = await apiService.explainTerm(q);
       setDefinition(res.definition);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Lookup failed');
+      setError(getApiErrorMessage(e, 'Lookup failed'));
     } finally {
       setLoading(false);
     }
@@ -55,7 +55,9 @@ export function GlossaryPage({ onBack }: GlossaryPageProps) {
           lookup(term);
         }}
       >
+        <label className="sr-only" htmlFor="glossary-term">Legal term</label>
         <input
+          id="glossary-term"
           className="input"
           placeholder="e.g. indemnify"
           value={term}
@@ -73,7 +75,7 @@ export function GlossaryPage({ onBack }: GlossaryPageProps) {
         ))}
       </div>
       {error && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">{error}</div>}
-      {loading && <p className="text-sm text-slate-500">Looking up…</p>}
+      {loading && <p className="text-sm text-slate-500" aria-live="polite">Looking up…</p>}
       {definition && (
         <div className="card">
           <div className="card-body text-sm text-slate-700">{definition}</div>

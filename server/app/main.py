@@ -19,7 +19,7 @@ from app.services.chunker import DocumentChunker
 from app.services.documents import documents
 from app.services.vector_store import vector_store
 from app.services.llm import llm_service
-from app.models.jobs import AnalysisJob, DocumentStatus, jobs
+from app.models.jobs import AnalysisJob, DocumentStatus, jobs, prune_jobs, remove_jobs_for_document
 from app.models.responses import JobStatusResponse
 
 ALLOWED_TYPES = {"pdf", "docx", "txt"}
@@ -131,9 +131,17 @@ async def upload_document(
     except ImportError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    content = await file.read()
-    if len(content) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="File too large (max 20MB).")
+    chunks: list[bytes] = []
+    total_bytes = 0
+    while True:
+        part = await file.read(1024 * 1024)
+        if not part:
+            break
+        total_bytes += len(part)
+        if total_bytes > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="File too large (max 20MB).")
+        chunks.append(part)
+    content = b"".join(chunks)
     if len(content) == 0:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
     _validate_file_signature(file_type, content)
@@ -147,7 +155,10 @@ async def upload_document(
         async def read(self) -> bytes:
             return self._data
 
-    result = await processor.process_file(_BytesUpload(content, file.filename), content=content)  # type: ignore[arg-type]
+    try:
+        result = await processor.process_file(_BytesUpload(content, file.filename), content=content)  # type: ignore[arg-type]
+    except (ValueError, OSError, RuntimeError) as exc:
+        raise HTTPException(status_code=422, detail="The uploaded file could not be parsed.") from exc
     if result["total_chars"] > settings.max_document_chars:
         raise HTTPException(
             status_code=413,
@@ -193,6 +204,7 @@ async def upload_document(
     job = AnalysisJob(job_id=job_id, document_id=doc_id, status=DocumentStatus.COMPLETED, created_at=time.time())
     job.result = {"clause_count": len(clause_dicts)}
     jobs[job_id] = job
+    prune_jobs()
 
     preview = [
         {k: c[k] for k in ("clause_id", "text", "page_number", "clause_index", "title") if k in c}
@@ -307,7 +319,8 @@ async def answer_question(request: QARequest) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail="Question must not be empty.")
     collection = f"doc_{request.document_id}"
     hits = vector_store.query(collection, query_text=request.question, top_k=5, document_id=request.document_id)
-    context_parts = [h["text"] for h in hits if h.get("text")] or [c["text"] for c in doc["clauses"][:5]]
+    relevant_hits = [h for h in hits if h.get("text") and h.get("similarity", 0) > 0]
+    context_parts = [h["text"] for h in relevant_hits] or [c["text"] for c in doc["clauses"][:5]]
     context = "\n\n".join(context_parts)[: settings.max_context_chars]
     try:
         result = await llm_service.generate_qa(
@@ -318,9 +331,11 @@ async def answer_question(request: QARequest) -> dict[str, Any]:
         )
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
+    valid_clause_ids = {c["clause_id"] for c in doc["clauses"]}
+    result["citations"] = [citation for citation in result.get("citations", []) if citation in valid_clause_ids]
     # Attach source excerpts so the UI can show grounding.
     result.setdefault("sources", [
-        {"chunk_id": h.get("chunk_id"), "text": h.get("text", "")[:400]} for h in hits[:3]
+        {"chunk_id": h.get("chunk_id"), "text": h.get("text", "")[:400]} for h in relevant_hits[:3]
     ])
     return result
 
@@ -391,4 +406,5 @@ async def delete_document(document_id: str) -> dict[str, str]:
         raise HTTPException(status_code=404, detail="Document not found.")
     documents.clear(document_id)
     vector_store.clear_collection(f"doc_{document_id}")
+    remove_jobs_for_document(document_id)
     return {"status": "deleted"}

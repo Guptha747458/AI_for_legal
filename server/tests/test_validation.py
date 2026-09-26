@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.core import settings as settings_module
+from app.models.jobs import AnalysisJob, ComparisonJob, DocumentStatus, jobs, prune_jobs, remove_jobs_for_document
 
 
 def test_upload_rejects_content_that_does_not_match_extension() -> None:
@@ -59,3 +60,18 @@ def test_delete_missing_document_returns_not_found() -> None:
     response = client.delete("/api/v1/documents/missing")
 
     assert response.status_code == 404
+
+
+def test_job_registry_is_bounded_and_document_cleanup_handles_comparisons() -> None:
+    jobs.clear()
+    jobs["analysis"] = AnalysisJob("analysis", "doc-1", DocumentStatus.COMPLETED, 1)
+    jobs["comparison"] = ComparisonJob("comparison", ["doc-1", "doc-2"], DocumentStatus.COMPLETED, 2)
+
+    remove_jobs_for_document("doc-1")
+    assert jobs == {}
+
+    for index in range(3):
+        jobs[str(index)] = AnalysisJob(str(index), f"doc-{index}", DocumentStatus.COMPLETED, index)
+    prune_jobs(max_jobs=2)
+    assert set(jobs) == {"1", "2"}
+    jobs.clear()
