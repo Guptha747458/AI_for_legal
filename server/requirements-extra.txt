@@ -1,0 +1,7 @@
+python-docx
+PyPDF2
+pdfminer.six
+
+# For text processing and vector storage
+nltk
+cohere  # Optional embeddings provider; Groq handles chat analysis.
