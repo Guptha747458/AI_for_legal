@@ -42,7 +42,8 @@ class DocumentChunker:
         Returns list of (start, end, heading_text) tuples.
         """
         boundaries = []
-        lines = text.split("\n")
+        lines = text.splitlines()
+        line_offsets = self._line_offsets(text)
 
         current_section_start = 0
         in_section = False
@@ -67,10 +68,10 @@ class DocumentChunker:
                         section_end = len(text)
                     boundaries.append((current_section_start, section_end, None))
 
-                current_section_start = self._line_position(text, i)
+                current_section_start = line_offsets[i]
                 in_section = True
             elif in_section and len(line_stripped) > 100:
-                cumulative = sum(len(ln) + 1 for ln in lines[:i + 1])
+                cumulative = line_offsets[i + 1] if i + 1 < len(line_offsets) else len(text)
                 if cumulative - current_section_start > self.max_chunk_chars:
                     boundaries.append((current_section_start, cumulative - len(line_stripped) - 1, None))
                     current_section_start = cumulative - len(line_stripped) - 1
@@ -81,18 +82,23 @@ class DocumentChunker:
 
         return boundaries
 
+    @staticmethod
+    def _line_offsets(text: str) -> list[int]:
+        offsets = [0]
+        for line in text.splitlines(keepends=True):
+            offsets.append(offsets[-1] + len(line))
+        return offsets
+
     def _line_position(self, text: str, line_index: int) -> int:
         """Get character position of a given line index in the text."""
-        lines = text.split("\n")
-        pos = 0
-        for i in range(line_index):
-            pos += len(lines[i]) + 1
-        return pos
+        offsets = self._line_offsets(text)
+        return offsets[line_index] if line_index < len(offsets) else len(text)
 
     def _split_into_paragraphs(self, text: str) -> list[tuple[int, int]]:
         """Split text into paragraph boundaries."""
         paragraphs = []
         lines = text.split("\n")
+        line_offsets = self._line_offsets(text)
 
         current_para_start = 0
         para_lines = 0
@@ -102,7 +108,7 @@ class DocumentChunker:
                 para_lines += 1
             else:
                 if para_lines > 0:
-                    para_end = self._line_position(text, i)
+                    para_end = line_offsets[i]
                     paragraphs.append((current_para_start, para_end))
                     current_para_start = para_end
                     para_lines = 0

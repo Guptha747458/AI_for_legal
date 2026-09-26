@@ -28,6 +28,10 @@ class TxtExtractor(TextExtractor):
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
 
+        return self._from_text(content)
+
+    @staticmethod
+    def _from_text(content: str) -> list[dict[str, Any]]:
         return [
             {
                 "text": content,
@@ -70,15 +74,7 @@ class DocxExtractor(TextExtractor):
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
             if content:
-                chunks.append(
-                    {
-                        "text": content,
-                        "page_number": 1,
-                        "start_pos": 0,
-                        "end_pos": len(content),
-                        "char_count": len(content),
-                    }
-                )
+                chunks.extend(TxtExtractor._from_text(content))
 
         return chunks
 
@@ -158,17 +154,25 @@ class DocumentProcessor:
         return self.extractors[file_type]
 
     def _calculate_text_position(self, chunks: list[dict], current_chunk_index: int) -> dict:
+        if not chunks:
+            return {"start_pos": 0, "end_pos": 0, "page_number": 1}
+
         total_pos = 0
-        for i, chunk in enumerate(chunks):
-            if i == current_chunk_index:
+        for index, chunk in enumerate(chunks):
+            chunk_len = len(chunk["text"])
+            if index == current_chunk_index:
                 return {
                     "start_pos": total_pos,
-                    "end_pos": total_pos + len(chunk["text"]),
+                    "end_pos": total_pos + chunk_len,
                     "page_number": chunk["page_number"],
                 }
-            total_pos += len(chunk["text"]) + 1
+            total_pos += chunk_len + 1
 
-        return {"start_pos": 0, "end_pos": len(chunks[current_chunk_index]["text"]), "page_number": 1}
+        return {
+            "start_pos": 0,
+            "end_pos": len(chunks[current_chunk_index]["text"]),
+            "page_number": 1,
+        }
 
     async def process_file(self, file: UploadFile, content: bytes | None = None) -> dict[str, Any]:
         """
@@ -195,8 +199,14 @@ class DocumentProcessor:
             remove_path_safely(file_path)
 
         processed_chunks = []
-        for i, chunk in enumerate(chunks):
-            pos_info = self._calculate_text_position(chunks, i)
+        total_pos = 0
+        for chunk in chunks:
+            chunk_len = len(chunk["text"])
+            pos_info = {
+                "start_pos": total_pos,
+                "end_pos": total_pos + chunk_len,
+                "page_number": chunk["page_number"],
+            }
 
             processed_chunks.append(
                 {
@@ -209,6 +219,7 @@ class DocumentProcessor:
                     "end_pos": pos_info["end_pos"],
                 }
             )
+            total_pos += chunk_len + 1
 
         return {
             "document_id": file_id,

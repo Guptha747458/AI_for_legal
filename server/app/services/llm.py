@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import re
 from typing import Any, TypeVar
@@ -34,6 +35,30 @@ class LLMService:
         self.temperature = settings.temperature
         self._client = None
         self._request_limit = asyncio.Semaphore(4)
+        self._cache: dict[str, dict[str, Any]] = {}
+        self._cache_max_entries = 256
+
+    @staticmethod
+    def _stable_hash(value: str) -> str:
+        return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+    def _cache_key(self, action: str, *parts: Any) -> str:
+        payload = json.dumps([action, *[p for p in parts]], separators=(',', ':'), ensure_ascii=False)
+        return self._stable_hash(payload)
+
+    def _get_cached(self, action: str, *parts: Any) -> dict[str, Any] | None:
+        key = self._cache_key(action, *parts)
+        cached = self._cache.get(key)
+        if cached is not None:
+            return cached
+        return None
+
+    def _store_cache(self, action: str, payload: dict[str, Any], *parts: Any) -> dict[str, Any]:
+        key = self._cache_key(action, *parts)
+        self._cache[key] = payload
+        if len(self._cache) > self._cache_max_entries:
+            self._cache.pop(next(iter(self._cache)))
+        return payload
 
     def _get_client(self):  # type: ignore[no-untyped-def]
         if self._client is None and settings.is_available():
@@ -144,6 +169,9 @@ class LLMService:
         """Generate a plain-language summary of a section."""
         if self.use_demo:
             return self._demo_simplify(section_id, original_text)
+        cached = self._get_cached("simplify", document_type, section_id, original_text)
+        if cached is not None:
+            return cached
         tool = {
             "name": "simplify_section",
             "description": "Simplify a legal clause into plain language while preserving the section ID",
@@ -184,10 +212,11 @@ class LLMService:
             "Return JSON with keys: section_id, simplified_text, key_terms (list of terms that need definition)."
         )
 
-        return self._validate_response(
+        result = self._validate_response(
             await self._call_groq(system, user, [tool], "simplify_section"),
             SimplificationResponse,
         )
+        return self._store_cache("simplify", result, document_type, section_id, original_text)
 
     async def generate_classification(
         self,
@@ -199,6 +228,9 @@ class LLMService:
         """Classify a clause and flag risk factors."""
         if self.use_demo:
             return self._demo_classify(clause_id, clause_text)
+        cached = self._get_cached("classify", document_type, jurisdiction, clause_id, clause_text)
+        if cached is not None:
+            return cached
         tool = {
             "name": "classify_clause",
             "description": "Classify a legal clause and flag its risk level",
@@ -268,10 +300,11 @@ class LLMService:
             "Return JSON with keys: clause_id, category, attention_level, rationale, plain_explanation."
         )
 
-        return self._validate_response(
+        result = self._validate_response(
             await self._call_groq(system, user, [tool], "classify_clause"),
             ClassificationResponse,
         )
+        return self._store_cache("classify", result, document_type, jurisdiction, clause_id, clause_text)
 
     async def generate_comparison(
         self,
@@ -283,6 +316,9 @@ class LLMService:
         """Compare two document versions and produce a structured diff."""
         if self.use_demo:
             return self._demo_compare(original_text, revised_text)
+        cached = self._get_cached("compare", document_type, jurisdiction, original_text, revised_text)
+        if cached is not None:
+            return cached
         tool = {
             "name": "compare_documents",
             "description": "Compare two document versions and produce a structured diff",
@@ -337,10 +373,11 @@ class LLMService:
             "Return JSON with keys: changes (list of {type, clause_id_old, clause_id_new, explanation, impact})."
         )
 
-        return self._validate_response(
+        result = self._validate_response(
             await self._call_groq(system, user, [tool], "compare_documents"),
             ComparisonResponse,
         )
+        return self._store_cache("compare", result, document_type, jurisdiction, original_text, revised_text)
 
     async def generate_qa(
         self,
@@ -352,6 +389,9 @@ class LLMService:
         """Generate a grounded answer to a document question."""
         if self.use_demo:
             return self._demo_qa(context, question)
+        cached = self._get_cached("qa", document_type, jurisdiction, context, question)
+        if cached is not None:
+            return cached
         tool = {
             "name": "answer_question",
             "description": "Answer a question about the document using only the provided excerpts",
@@ -400,10 +440,11 @@ class LLMService:
             "Return JSON with keys: answer, citations (list of clause_ids), disclaimer_needed (bool)."
         )
 
-        return self._validate_response(
+        result = self._validate_response(
             await self._call_groq(system, user, [tool], "answer_question"),
             QAResponse,
         )
+        return self._store_cache("qa", result, document_type, jurisdiction, context, question)
 
     async def generate_checklist(
         self,
@@ -414,6 +455,9 @@ class LLMService:
         """Generate an action checklist and questions for a lawyer."""
         if self.use_demo:
             return self._demo_checklist(analysis_summary)
+        cached = self._get_cached("checklist", document_type, jurisdiction, analysis_summary)
+        if cached is not None:
+            return cached
         tool = {
             "name": "generate_checklist",
             "description": "Generate an action checklist and questions for a lawyer",
@@ -472,10 +516,11 @@ class LLMService:
             "questions_for_lawyer (list of {question, related_clause_id})."
         )
 
-        return self._validate_response(
+        result = self._validate_response(
             await self._call_groq(system, user, [tool], "generate_checklist"),
             ChecklistResponse,
         )
+        return self._store_cache("checklist", result, document_type, jurisdiction, analysis_summary)
 
 
     # ------------------------------------------------------------------
