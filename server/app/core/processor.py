@@ -4,13 +4,11 @@ Core document processing services for LegalLens.
 
 import uuid
 from abc import ABC, abstractmethod
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from fastapi import UploadFile
 
-from app.models.jobs import DocumentStatus
 from app.core.settings import settings
 from app.core.cleanup import remove_path_safely
 

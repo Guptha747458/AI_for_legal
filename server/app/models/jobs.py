@@ -9,35 +9,6 @@ from enum import Enum
 from typing import Any
 
 
-class RiskLevel(str, Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-
-
-class ClauseCategory(str, Enum):
-    OBLIGATIONS = "obligations"
-    RIGHTS = "rights"
-    DEADLINES = "deadlines"
-    PENALTIES_FEES = "penalties_fees"
-    TERMINATION = "termination"
-    AUTO_RENEWAL = "auto_renewal"
-    LIABILITY_INDEMNIFICATION = "liability_indemnification"
-    DISPUTE_RESOLUTION = "dispute_resolution"
-    DATA_PRIVACY = "data_privacy"
-    UNUSUAL_NONSTANDARD = "unusual_nonstandard"
-
-
-class DocumentType(str, Enum):
-    CONTRACT = "contract"
-    LEASE = "lease"
-    EMPLOYMENT = "employment"
-    TERMS_OF_SERVICE = "terms_of_service"
-    PRIVACY_POLICY = "privacy_policy"
-    NOTICE = "notice"
-    OTHER = "other"
-
-
 class DocumentStatus(str, Enum):
     PENDING = "pending"
     PARSED = "parsed"
@@ -46,10 +17,6 @@ class DocumentStatus(str, Enum):
     FAILED = "failed"
 
 
-class ChatRole(str, Enum):
-    USER = "user"
-    ASSISTANT = "assistant"
-    SYSTEM = "system"
 
 
 class AnalysisJob:

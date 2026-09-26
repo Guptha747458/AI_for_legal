@@ -7,8 +7,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from dataclasses import dataclass, field
-from typing import Generator
+from dataclasses import dataclass
 
 
 @dataclass
@@ -33,21 +32,6 @@ class DocumentChunker:
     Split documents into semantic chunks (sections/clauses).
     Uses numbered headings, common legal patterns, and heuristics.
     """
-
-    SECTION_PATTERNS = [
-        r"^(\d+\.\s+.+)",
-        r"^(\d+\)\s+.+)",
-        r"^([A-Z][A-Z\s]+:?)$",
-        r"^ARTICLE\s+(\d+)",
-        r"^SECTION\s+(\d+)",
-        r"^TITLE\s+(\d+)",
-    ]
-
-    CLAUSE_PATTERNS = [
-        r"^\([a-z]\)\s+",
-        r"^\d+\)\s+",
-        r"^-\s+",
-    ]
 
     def __init__(self, max_chunk_chars: int = 5000) -> None:
         self.max_chunk_chars = max_chunk_chars
@@ -86,7 +70,7 @@ class DocumentChunker:
                 current_section_start = self._line_position(text, i)
                 in_section = True
             elif in_section and len(line_stripped) > 100:
-                cumulative = sum(len(l) + 1 for l in lines[:i + 1])
+                cumulative = sum(len(ln) + 1 for ln in lines[:i + 1])
                 if cumulative - current_section_start > self.max_chunk_chars:
                     boundaries.append((current_section_start, cumulative - len(line_stripped) - 1, None))
                     current_section_start = cumulative - len(line_stripped) - 1
@@ -187,33 +171,3 @@ class DocumentChunker:
                     clause_index += 1
 
         return clauses
-
-
-def chunk_document_simple(document_id: str, chunks: list[dict]) -> list[Clause]:
-    """Simple chunking without section detection, for fallback."""
-    clauses = []
-    clause_index = 0
-
-    for chunk in chunks:
-        text = chunk.get("text", "")
-        page_number = chunk.get("page_number", 1)
-        chunk_start_pos = chunk.get("start_pos", 0)
-
-        paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
-
-        for para in paragraphs:
-            abs_pos = chunk_start_pos + text.find(para)
-            clause = Clause(
-                clause_id=str(uuid.uuid4()),
-                document_id=document_id,
-                text=para,
-                char_count=len(para),
-                page_number=page_number,
-                start_pos=abs_pos,
-                end_pos=abs_pos + len(para),
-                clause_index=clause_index,
-            )
-            clauses.append(clause)
-            clause_index += 1
-
-    return clauses
