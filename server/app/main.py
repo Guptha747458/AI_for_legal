@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import atexit
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -13,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from app.core.settings import settings
 from app.core.processor import processor
+from app.core.cleanup import cleanup_temp_files
 from app.services.chunker import DocumentChunker
 from app.services.documents import documents
 from app.services.vector_store import vector_store
@@ -26,10 +28,20 @@ MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Clean any stale temporary files from previous runs
+    cleanup_temp_files()
     settings.upload_dir.mkdir(parents=True, exist_ok=True)
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     settings.output_dir.mkdir(parents=True, exist_ok=True)
-    yield
+    try:
+        yield
+    finally:
+        # Immediately remove all temporary files when closing the app
+        cleanup_temp_files()
+
+
+# Ensure temporary files are removed when the Python process exits
+atexit.register(cleanup_temp_files)
 
 
 app = FastAPI(

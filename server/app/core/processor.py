@@ -12,6 +12,7 @@ from fastapi import UploadFile
 
 from app.models.jobs import DocumentStatus
 from app.core.settings import settings
+from app.core.cleanup import remove_path_safely
 
 
 class TextExtractor(ABC):
@@ -49,7 +50,8 @@ class DocxExtractor(TextExtractor):
         except ImportError:
             raise ImportError("python-docx is required to parse DOCX files")
 
-        doc = docx.Document(file_path)
+        with open(file_path, "rb") as f:
+            doc = docx.Document(f)
         chunks = []
 
         for para in doc.paragraphs:
@@ -192,7 +194,7 @@ class DocumentProcessor:
 
             chunks = extractor.extract_text(file_path)
         finally:
-            file_path.unlink(missing_ok=True)
+            remove_path_safely(file_path)
 
         processed_chunks = []
         for i, chunk in enumerate(chunks):
